@@ -15,6 +15,7 @@ struct State {
     size: winit::dpi::PhysicalSize<u32>,
     surface: wgpu::Surface<'static>,
     surface_format: wgpu::TextureFormat,
+    clear_color: wgpu::Color,
 }
 
 impl State {
@@ -50,6 +51,7 @@ impl State {
             size,
             surface,
             surface_format,
+            clear_color: wgpu::Color::GREEN,
         };
 
         // Configure surface for the first time
@@ -62,8 +64,12 @@ impl State {
         &self.window
     }
 
-    fn input(&self, event: &WindowEvent) -> bool {
+    fn input(&mut self, event: &WindowEvent) -> bool {
         match event {
+            WindowEvent::CursorMoved { .. } => {
+                self.clear_color = wgpu::Color::BLUE;
+                return true;
+            }
             _ => false,
         }
     }
@@ -114,7 +120,7 @@ impl State {
                 view: &texture_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    load: wgpu::LoadOp::Clear(self.clear_color),
                     store: wgpu::StoreOp::Store,
                 },
             })],
