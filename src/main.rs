@@ -172,6 +172,8 @@ fn main() {
     // documentation for more information.
     env_logger::init();
 
+    println!("Test");
+
     let event_loop = EventLoop::new().unwrap();
 
     // When the current loop iteration finishes, immediately begin a new
