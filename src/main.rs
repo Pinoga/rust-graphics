@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use winit::{
     application::ApplicationHandler,
-    event::WindowEvent,
+    event::{ElementState, KeyEvent, WindowEvent},
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowId},
 };
 
@@ -35,7 +36,12 @@ impl State {
 
         let surface = instance.create_surface(window.clone()).unwrap();
         let cap = surface.get_capabilities(&adapter);
-        let surface_format = cap.formats[0];
+        let surface_format = cap
+            .formats
+            .iter()
+            .find(|f| f.is_srgb())
+            .copied()
+            .unwrap_or(cap.formats[0]);
 
         let state = State {
             window,
@@ -54,6 +60,12 @@ impl State {
 
     fn get_window(&self) -> &Window {
         &self.window
+    }
+
+    fn input(&self, event: &WindowEvent) -> bool {
+        match event {
+            _ => false,
+        }
     }
 
     fn configure_surface(&self) {
@@ -93,7 +105,7 @@ impl State {
                 ..Default::default()
             });
 
-        // Renders a GREEN screen
+        // Renders a BLACK screen
         let mut encoder = self.device.create_command_encoder(&Default::default());
         // Create the renderpass which will clear the screen.
         let renderpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -145,6 +157,9 @@ impl ApplicationHandler for App {
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         let state = self.state.as_mut().unwrap();
+
+        if state.input(&event) {}
+
         match event {
             WindowEvent::CloseRequested => {
                 println!("The close button was pressed; stopping");
@@ -160,6 +175,15 @@ impl ApplicationHandler for App {
                 // here as this event is always followed up by redraw request.
                 state.resize(size);
             }
+            WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        physical_key: PhysicalKey::Code(KeyCode::Escape),
+                        state: ElementState::Pressed,
+                        ..
+                    },
+                ..
+            } => event_loop.exit(),
             _ => (),
         }
     }
