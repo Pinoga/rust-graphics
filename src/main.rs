@@ -91,6 +91,8 @@ impl State {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
+            cache: None,
+            multiview: None,
         });
 
         let state = State {
