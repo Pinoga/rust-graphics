@@ -102,7 +102,7 @@ impl State {
                 view: &texture_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                     store: wgpu::StoreOp::Store,
                 },
             })],
@@ -171,8 +171,6 @@ fn main() {
     // To change the log level, set the `RUST_LOG` environment variable. See the `env_logger`
     // documentation for more information.
     env_logger::init();
-
-    println!("Test");
 
     let event_loop = EventLoop::new().unwrap();
 
