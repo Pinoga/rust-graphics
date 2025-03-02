@@ -5,7 +5,6 @@ use winit::{
     event::{ElementState, KeyEvent, WindowEvent},
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
-    platform::scancode::PhysicalKeyExtScancode,
     window::{Window, WindowId},
 };
 
@@ -150,7 +149,7 @@ impl State {
             size,
             surface,
             surface_format,
-            clear_color: wgpu::Color::GREEN,
+            clear_color: wgpu::Color::BLACK,
             render_pipelines,
             active_pipeline: 0,
         };
@@ -167,10 +166,10 @@ impl State {
 
     fn input(&mut self, event: &WindowEvent) -> bool {
         match event {
-            WindowEvent::CursorMoved { .. } => {
-                self.clear_color = wgpu::Color::BLUE;
-                return true;
-            }
+            // WindowEvent::CursorMoved { .. } => {
+            //     self.clear_color = wgpu::Color::BLUE;
+            //     return true;
+            // }
             WindowEvent::KeyboardInput {
                 event:
                     KeyEvent {
