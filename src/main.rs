@@ -5,6 +5,7 @@ use winit::{
     event::{ElementState, KeyEvent, WindowEvent},
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
+    platform::scancode::PhysicalKeyExtScancode,
     window::{Window, WindowId},
 };
 
@@ -16,7 +17,8 @@ struct State {
     surface: wgpu::Surface<'static>,
     surface_format: wgpu::TextureFormat,
     clear_color: wgpu::Color,
-    render_pipeline: wgpu::RenderPipeline,
+    active_pipeline: usize,
+    render_pipelines: Vec<wgpu::RenderPipeline>,
 }
 
 impl State {
@@ -95,6 +97,52 @@ impl State {
             multiview: None,
         });
 
+        let shader_gradient = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Shader Gradient"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shader_gradient.wgsl").into()),
+        });
+
+        let render_pipeline_gradient =
+            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("Render Pipeline Gradient"),
+                layout: Some(&render_pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &shader_gradient,
+                    entry_point: Some("vs_main"),
+                    buffers: &[],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &shader_gradient,
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: surface_format,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: Some(wgpu::Face::Back),
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    unclipped_depth: false,
+                    conservative: false,
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+                cache: None,
+                multiview: None,
+            });
+
+        let render_pipelines = vec![render_pipeline, render_pipeline_gradient];
+
         let state = State {
             window,
             device,
@@ -103,7 +151,8 @@ impl State {
             surface,
             surface_format,
             clear_color: wgpu::Color::GREEN,
-            render_pipeline,
+            render_pipelines,
+            active_pipeline: 0,
         };
 
         // Configure surface for the first time
@@ -120,6 +169,19 @@ impl State {
         match event {
             WindowEvent::CursorMoved { .. } => {
                 self.clear_color = wgpu::Color::BLUE;
+                return true;
+            }
+            WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        physical_key: PhysicalKey::Code(KeyCode::Space),
+                        state: ElementState::Pressed,
+                        repeat: false,
+                        ..
+                    },
+                ..
+            } => {
+                self.active_pipeline = (self.active_pipeline + 1) % &self.render_pipelines.len();
                 return true;
             }
             _ => false,
@@ -166,8 +228,8 @@ impl State {
         // Renders a BLACK screen
         let mut encoder = self.device.create_command_encoder(&Default::default());
         // Create the renderpass which will clear the screen.
-        let renderpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: None,
+        let mut renderpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &texture_view,
                 resolve_target: None,
@@ -180,6 +242,9 @@ impl State {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
+
+        renderpass.set_pipeline(&self.render_pipelines[self.active_pipeline]);
+        renderpass.draw(0..3, 0..1);
 
         // If you wanted to call any drawing commands, they would go here.
 
